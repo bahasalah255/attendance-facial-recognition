@@ -12,7 +12,8 @@ class SupervisorController extends Controller
      */
     public function index()
     {
-        //
+         $supervisors = Supervisor::with('interns')->get();
+        return response()->json($supervisors);
     }
 
     /**
@@ -20,7 +21,17 @@ class SupervisorController extends Controller
      */
     public function store(Request $request)
     {
-        //
+         $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:supervisors',
+            'phone' => 'required|string',
+            'department' => 'required|string',
+        ]);
+
+        $supervisor = Supervisor::create($request->all());
+
+        return response()->json($supervisor, 201);
     }
 
     /**
@@ -28,7 +39,8 @@ class SupervisorController extends Controller
      */
     public function show(string $id)
     {
-        //
+         $supervisor = Supervisor::with('interns')->findOrFail($id);
+        return response()->json($supervisor);
     }
 
     /**
@@ -36,7 +48,19 @@ class SupervisorController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        
+        $supervisor = Supervisor::findOrFail($id);
+
+        $request->validate([
+            'first_name' => 'sometimes|string|max:255',
+            'last_name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:supervisors,email,' . $id,
+            'phone' => 'sometimes|string',
+            'department' => 'sometimes|string',
+        ]);
+
+        $supervisor->update($request->all());
+        return response()->json($supervisor);
     }
 
     /**
@@ -44,6 +68,8 @@ class SupervisorController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+         $supervisor = Supervisor::findOrFail($id);
+        $supervisor->delete();
+        return response()->json(['message' => 'Encadrant supprimé avec succès']);
     }
 }

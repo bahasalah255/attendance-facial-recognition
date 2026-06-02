@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Employee;
 
 class EmployeeController extends Controller
 {
@@ -12,7 +13,8 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        //
+        $employes = Employee::with('shift')->get();
+        return response()->json($employes);
     }
 
     /**
@@ -20,7 +22,23 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'position' => 'required|string',
+            'department' => 'required|string',
+            'shift_id' => 'required|exists:shifts,id',
+            'hire_date' => 'required|date',
+        ]);
+        $employe = Employee::create([
+             'matricule' => Employee::generateMatricule(),
+            'full_name' => $request->full_name,
+            'photo' => $request->photo,
+            'position' => $request->position,
+            'department' => $request->department,
+            'shift_id' => $request->shift_id,
+            'hire_date' => $request->hire_date,
+        ]);
+        return response()->json($employee, 201);
     }
 
     /**
@@ -28,7 +46,8 @@ class EmployeeController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $employe = Employee::with(['shift', 'attendances', 'faceData'])->findOrfail($id);
+        return response()->json($employe);
     }
 
     /**
@@ -36,7 +55,15 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $employe = Employee::findOrfail($id);
+         $request->validate([
+            'full_name' => 'sometimes|string|max:255',
+            'position' => 'sometimes|string',
+            'department' => 'sometimes|string',
+            'shift_id' => 'sometimes|exists:shifts,id',
+        ]);
+        $employe->update($request->all());
+        return response()->json($employe);
     }
 
     /**
@@ -44,6 +71,8 @@ class EmployeeController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $employe = Employee::findOrfail($id);
+        $employe->delete();
+        return response()->json(['message' => 'Employe Delete with Success']);
     }
 }
