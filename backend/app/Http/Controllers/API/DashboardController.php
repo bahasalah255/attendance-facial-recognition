@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Intern;
 use App\Models\Attendance;
 use App\Models\Anomaly;
+use App\Models\Shift;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -34,9 +35,15 @@ class DashboardController extends Controller
         $absentToday = Attendance::where('date', $today)
             ->where('status', 'absent')
             ->count();
+
+        $estimatedAbsentToday = max(($totalEmployees + $totalInterns) - $presentToday, 0);
         
         // Anomalies non résolues
         $pendingAnomalies = Anomaly::where('resolved', false)->count();
+
+        $todayHours = Attendance::where('date', $today)
+            ->whereNotNull('total_hours')
+            ->avg('total_hours');
         
         return response()->json([
             'total_employees' => $totalEmployees,
@@ -45,8 +52,10 @@ class DashboardController extends Controller
             'present_today' => $presentToday,
             'late_today' => $lateToday,
             'absent_today' => $absentToday,
+            'estimated_absent_today' => $estimatedAbsentToday,
             'pending_anomalies' => $pendingAnomalies,
-            'attendance_rate' => $totalEmployees > 0 ? round(($presentToday / $totalEmployees) * 100) : 0,
+            'attendance_rate' => ($totalEmployees + $totalInterns) > 0 ? round(($presentToday / ($totalEmployees + $totalInterns)) * 100) : 0,
+            'average_work_minutes_today' => $todayHours ? round($todayHours) : 0,
         ]);
     }
     
@@ -70,6 +79,66 @@ class DashboardController extends Controller
         return response()->json([
             'days' => $days,
             'attendances' => $attendances,
+        ]);
+    }
+
+    public function monthlyAttendance()
+    {
+        $months = [];
+        $attendances = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $months[] = $date->format('M');
+
+            $count = Attendance::whereYear('date', $date->year)
+                ->whereMonth('date', $date->month)
+                ->whereNotNull('check_in')
+                ->count();
+
+            $attendances[] = $count;
+        }
+
+        return response()->json([
+            'months' => $months,
+            'attendances' => $attendances,
+        ]);
+    }
+
+    public function attendanceByShift()
+    {
+        $shifts = Shift::withCount(['employees', 'interns'])->get();
+
+        return response()->json($shifts->map(function ($shift) {
+            return [
+                'name' => $shift->name,
+                'employees' => $shift->employees_count,
+                'interns' => $shift->interns_count,
+                'total' => $shift->employees_count + $shift->interns_count,
+            ];
+        }));
+    }
+
+    public function attendanceByService()
+    {
+        $employees = Employee::select('department')->get();
+        $interns = Intern::select('service')->get();
+
+        $services = collect();
+
+        foreach ($employees as $employee) {
+            $services->push($employee->department);
+        }
+
+        foreach ($interns as $intern) {
+            $services->push($intern->service);
+        }
+
+        $grouped = $services->filter()->countBy()->sortDesc()->take(8);
+
+        return response()->json([
+            'labels' => $grouped->keys()->values(),
+            'data' => $grouped->values(),
         ]);
     }
     
@@ -130,5 +199,27 @@ class DashboardController extends Controller
             ->values();
         
         return response()->json($lateEmployees);
+    }
+
+    public function dailyOverview()
+    {
+        $today = Carbon::today();
+
+        $timeline = Attendance::where('date', $today)
+            ->orderBy('check_in')
+            ->with('user')
+            ->get()
+            ->map(function ($attendance) {
+                $user = $attendance->user;
+
+                return [
+                    'name' => $user ? ($user->full_name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) : 'Inconnu',
+                    'type' => class_basename($attendance->user_type),
+                    'check_in' => $attendance->check_in,
+                    'status' => $attendance->status,
+                ];
+            });
+
+        return response()->json($timeline);
     }
 }

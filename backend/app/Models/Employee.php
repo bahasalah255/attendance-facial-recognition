@@ -13,10 +13,15 @@ class Employee extends Model
         'matricule',
         'full_name',
         'photo',
+        'photos',
         'position',
         'department',
         'shift_id',
         'hire_date',
+    ];
+
+    protected $casts = [
+        'photos' => 'array',
     ];
 
     public function shift()

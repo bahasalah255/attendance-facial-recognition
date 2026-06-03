@@ -15,11 +15,27 @@ class Supervisor extends Model
         'email',
         'phone',
         'department',
+        'photo',
+        'photos',
+    ];
+
+    protected $casts = [
+        'photos' => 'array',
     ];
 
     public function interns()
     {
         return $this->hasMany(Intern::class);
+    }
+
+    public function faceData()
+    {
+        return $this->morphOne(FaceData::class, 'user');
+    }
+
+    public function attendances()
+    {
+        return $this->morphMany(\App\Models\Attendance::class, 'user');
     }
 
     public function getFullNameAttribute()

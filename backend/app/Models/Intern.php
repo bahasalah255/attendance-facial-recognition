@@ -13,6 +13,7 @@ class Intern extends Model
         'first_name',
         'last_name',
         'photo',
+        'photos',
         'establishment',
         'internship_type',
         'start_date',
@@ -21,6 +22,10 @@ class Intern extends Model
         'supervisor_id',
         'service',
         'shift_id',
+    ];
+
+    protected $casts = [
+        'photos' => 'array',
     ];
 
     public function shift()
