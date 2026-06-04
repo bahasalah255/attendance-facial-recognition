@@ -1,0 +1,43 @@
+%% Diagramme de cas d'utilisation - Attendance Facial Recognition
+%% Format: Mermaid usecaseDiagram
+
+usecaseDiagram
+actor Employé as E
+actor Stagiaire as S
+actor Encadrant as Enc
+actor Administrateur as Admin
+actor "Service Reconnaissance\nFaciale" as FR
+
+E --> (S'authentifier)
+E --> (Consigner présence)
+E --> (Capturer 5 photos)
+E --> (Visualiser historique)
+
+S --> (S'authentifier)
+S --> (Consigner présence)
+S --> (Capturer 5 photos)
+
+Enc --> (S'authentifier)
+Enc --> (Consigner présence)
+Enc --> (Gérer équipe)
+Enc --> (Reporter anomalie)
+
+Admin --> (Gérer profils)
+Admin --> (Générer rapports)
+Admin --> (Visualiser dashboard)
+Admin --> (Configurer seuils anti-fraude)
+
+(Capturer 5 photos) --> (Calculer descripteurs)
+(Calculer descripteurs) --> FR
+(Consigner présence) --> (Comparer descripteurs)
+(Comparer descripteurs) --> FR
+
+(Comparer descripteurs) ..> (Vérification anti-fraude) : <<include>>
+(Comparer descripteurs) ..> (Détection d'anomalies) : <<include>>
+(Détection d'anomalies) ..> Admin : <<notify>>
+
+note right of FR
+  FR = service externe de reconnaissance
+  calcule les descripteurs et répond
+  aux requêtes de comparaison.
+end note

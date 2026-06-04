@@ -8,6 +8,9 @@ use App\Http\Controllers\API\EmployeeController;
 use App\Http\Controllers\API\InternController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\AnomalyController;
+use App\Http\Controllers\API\ScanLogController;
+use App\Http\Controllers\API\ShiftController;
 use App\Http\Controllers\API\SupervisorController;
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -22,6 +25,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('interns', InternController::class);
     Route::apiResource('supervisors', SupervisorController::class);
+    Route::apiResource('shifts', ShiftController::class);
+    Route::apiResource('anomalies', AnomalyController::class)->only(['index', 'update']);
+    Route::get('/scan-logs', [ScanLogController::class, 'index']);
     Route::get('/attendance', [AttendanceController::class, 'index']);
     Route::post('/attendance/recognize', [AttendanceController::class, 'recognize']);
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);

@@ -1,0 +1,56 @@
+%% Use-case diagram (flowchart-compatible) for Mermaid
+flowchart LR
+  %% Actors on the left
+  subgraph Actors
+    direction TB
+    E["Employé"]
+    S["Stagiaire"]
+    Enc["Encadrant"]
+    Admin["Administrateur"]
+  end
+
+  %% System box on the right
+  subgraph System[System]
+    direction TB
+    UC1(("Consigner présence"))
+    UC2(("Capturer 5 photos"))
+    UC3(("Calculer descripteurs"))
+    UC4(("Comparer descripteurs"))
+    UC5(("Vérification anti-fraude"))
+    UC6(("Détection d'anomalies"))
+    UC7(("Gérer profils"))
+    UC8(("Générer rapports"))
+    UC9(("Visualiser dashboard"))
+  end
+
+  %% External service
+  FR["Service Reconnaissance Faciale"]
+
+  %% Connections
+  E --> UC1
+  E --> UC2
+  S --> UC1
+  S --> UC2
+  Enc --> UC1
+  Enc --> UC2
+  Enc --> UC10["Gérer équipe"]
+  Enc --> UC11["Reporter anomalie"]
+
+  Admin --> UC7
+  Admin --> UC8
+  Admin --> UC9
+  Admin --> UC12["Configurer seuils anti-fraude"]
+
+  UC2 --> UC3
+  UC3 --> FR
+  UC1 --> UC4
+  UC4 --> FR
+  UC4 --> UC5
+  UC4 --> UC6
+  UC6 --> Admin
+
+  classDef actor fill:#fff,stroke:#333,stroke-width:1px;
+  class E,S,Enc,Admin actor;
+  %% Force white background for system/actors boxes
+  style System fill:#ffffff,stroke:#e6e6e6,stroke-width:1px
+  style Actors fill:#ffffff,stroke:#e6e6e6,stroke-width:1px

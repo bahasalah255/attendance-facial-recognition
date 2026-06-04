@@ -5,6 +5,9 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Employees from './pages/employees/Employees';
 import Interns from './pages/interns/Interns';
 import Supervisors from './pages/supervisors/Supervisors';
+import Shifts from './pages/shifts/Shifts';
+import Anomalies from './pages/anomalies/Anomalies';
+import ScanHistory from './pages/scanHistory/ScanHistory';
 import Attendance from './pages/attendance/Attendance';
 import Reports from './pages/reports/Reports';
 import Layout from './components/common/Layout';
@@ -30,6 +33,9 @@ function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="interns" element={<Interns />} />
           <Route path="supervisors" element={<Supervisors />} />
+          <Route path="shifts" element={<Shifts />} />
+          <Route path="anomalies" element={<Anomalies />} />
+          <Route path="scan-history" element={<ScanHistory />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="reports" element={<Reports />} />
         </Route>

@@ -68,7 +68,7 @@ class AttendanceController extends Controller
             ScanLog::create([
                 'user_identifier' => 'Inconnu',
                 'accepted' => false,
-                'rejection_reason' => 'Visage non reconnu',
+                'rejection_reason' => 'Utilisateur inconnu',
                 'scan_time' => now(),
             ]);
 
@@ -88,7 +88,7 @@ class AttendanceController extends Controller
             ScanLog::create([
                 'user_identifier' => $userType . ' (' . $userName . ')',
                 'accepted' => false,
-                'rejection_reason' => 'Scan refusé: délai minimum de 15 minutes non respecté',
+                'rejection_reason' => 'Anti-spam: délai minimum de 15 minutes non respecté',
                 'scan_time' => $now,
             ]);
 
@@ -138,6 +138,13 @@ class AttendanceController extends Controller
         ]);
 
         if ($attendance->exists && $attendance->check_in) {
+            ScanLog::create([
+                'user_identifier' => $this->scanIdentifier($user),
+                'accepted' => false,
+                'rejection_reason' => 'Double Check-In',
+                'scan_time' => now(),
+            ]);
+
             throw ValidationException::withMessages([
                 'attendance' => 'Le check-in a déjà été enregistré pour aujourd\'hui.',
             ]);
@@ -156,6 +163,13 @@ class AttendanceController extends Controller
         if ($status === 'late') {
             $this->createOrUpdateAnomaly($user, 'late', 'Check-in en retard détecté automatiquement', $attendance->date);
         }
+
+        ScanLog::create([
+            'user_identifier' => $this->scanIdentifier($user),
+            'accepted' => true,
+            'rejection_reason' => null,
+            'scan_time' => $checkInTime,
+        ]);
 
         return response()->json([
             'message' => 'Check-in enregistré avec succès',
@@ -177,12 +191,26 @@ class AttendanceController extends Controller
         ])->first();
 
         if (!$attendance || !$attendance->check_in) {
+            ScanLog::create([
+                'user_identifier' => $this->scanIdentifier($this->resolveUser($validated['user_type'], $validated['user_id'])),
+                'accepted' => false,
+                'rejection_reason' => 'Double Check-Out',
+                'scan_time' => now(),
+            ]);
+
             throw ValidationException::withMessages([
                 'attendance' => 'Aucun check-in trouvé pour aujourd\'hui.',
             ]);
         }
 
         if ($attendance->check_out) {
+            ScanLog::create([
+                'user_identifier' => $this->scanIdentifier($this->resolveUser($validated['user_type'], $validated['user_id'])),
+                'accepted' => false,
+                'rejection_reason' => 'Double Check-Out',
+                'scan_time' => now(),
+            ]);
+
             throw ValidationException::withMessages([
                 'attendance' => 'Le check-out a déjà été enregistré pour aujourd\'hui.',
             ]);
@@ -205,6 +233,13 @@ class AttendanceController extends Controller
             $this->createOrUpdateAnomaly($user, 'early_departure', 'Départ anticipé détecté automatiquement', $attendance->date);
         }
 
+        ScanLog::create([
+            'user_identifier' => $this->scanIdentifier($user),
+            'accepted' => true,
+            'rejection_reason' => null,
+            'scan_time' => $checkOutTime,
+        ]);
+
         return response()->json([
             'message' => 'Check-out enregistré avec succès',
             'attendance' => $this->formatAttendance($attendance->fresh('user')),
@@ -216,6 +251,17 @@ class AttendanceController extends Controller
         return $type === 'employee'
             ? Employee::with('shift')->findOrFail($id)
             : Intern::with('shift')->findOrFail($id);
+    }
+
+    private function scanIdentifier($user): string
+    {
+        $fullName = $user->full_name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+
+        if (empty($fullName)) {
+            return 'Inconnu';
+        }
+
+        return ($user->matricule ?? class_basename($user)) . ' (' . $fullName . ')';
     }
 
     private function classForType(string $type): string

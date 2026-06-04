@@ -16,6 +16,7 @@ class Anomaly extends Model
         'type',
         'details',
         'resolved',
+        'comment',
     ];
 
     protected $casts = [
